@@ -127,7 +127,7 @@ export function useInfoFeed() {
     const fetchData = async (userKeywords = []) => {
         isLoading.value = true;
         error.value = null;
-        const allData = [];
+        let allData = [];
 
         try {
             // 并发获取所有数据源
@@ -146,6 +146,30 @@ export function useInfoFeed() {
             }
             if (devToData.status === 'fulfilled') {
                 allData.push(...devToData.value);
+            }
+
+            // 根据用户关键字过滤，保证主题相关
+            const normalizedKeywords = userKeywords
+                .map(keyword => keyword.toLowerCase())
+                .filter(Boolean);
+
+            if (normalizedKeywords.length > 0) {
+                allData = allData.filter(item => {
+                    const title = (item.title || '').toLowerCase();
+                    const description = (item.description || '').toLowerCase();
+
+                    const keywordMatched = item.keywords?.some(k =>
+                        normalizedKeywords.some(keyword => (k || '').toLowerCase().includes(keyword))
+                    );
+
+                    if (keywordMatched) {
+                        return true;
+                    }
+
+                    return normalizedKeywords.some(keyword =>
+                        title.includes(keyword) || description.includes(keyword)
+                    );
+                });
             }
 
             // 按时间排序
