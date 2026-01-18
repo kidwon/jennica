@@ -1,5 +1,24 @@
-# Vue 3 + Vite
+# Jennica
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Jennica 是一个基于 Vue 3 + Vite 的信息聚合助手，聚焦技术内容，支持自定义关键字和信息来源，帮助你集中追踪 GitHub、Hacker News、Dev.to 以及任意 RSS/Atom 网站的最新动态。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## 功能亮点
+- 关键字管理：自定义高亮和筛选关键词，精准掌握关注主题。
+- 信息源管理：内置 GitHub/Hacker News/Dev.to，可添加任意 RSS 链接作为自定义来源并按需启停。
+- 智能筛选：按关键字、来源、全文搜索实时过滤，按日期时间线展示，并突出匹配关键词。
+- 本地持久化：关键字和信息源配置自动保存在浏览器 localStorage，无需额外后端。
+
+## 开发 & 构建
+```bash
+npm install      # 安装依赖
+npm run dev      # 本地开发，默认 http://localhost:5173
+npm run build    # 生产构建，输出 dist/
+npm run preview  # 预览生产版本
+```
+
+## 自定义信息源
+1. 打开页面后的 “信息源管理” 卡片。
+2. 填写来源名称与 RSS/Atom 链接（例如 https://techcrunch.com/feed/）。
+3. 新来源立即与现有关键字联动，刷新后即可看到聚合内容；可随时禁用或删除。
+
+若需部署到 GitHub Pages，本仓库已内置自动化工作流，推送到 `main` 分支将自动构建并发布。EOF

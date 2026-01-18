@@ -4,7 +4,6 @@ import {
     fetchHackerNews,
     fetchDevTo,
     fetchRSSFeed,
-    RSS_SOURCES
 } from '../api/dataSourceClient';
 
 /**
@@ -124,29 +123,36 @@ export function useInfoFeed() {
     };
 
     // 获取真实数据
-    const fetchData = async (userKeywords = []) => {
+    const fetchData = async (userKeywords = [], activeSources = []) => {
         isLoading.value = true;
         error.value = null;
         let allData = [];
 
         try {
-            // 并发获取所有数据源
-            const [githubData, hackerNewsData, devToData] = await Promise.allSettled([
-                fetchGitHubTrending('', userKeywords),
-                fetchHackerNews(userKeywords),
-                fetchDevTo(userKeywords),
-            ]);
+            if (!activeSources || activeSources.length === 0) {
+                infoList.value = [];
+                return;
+            }
 
-            // 处理成功的请求
-            if (githubData.status === 'fulfilled') {
-                allData.push(...githubData.value);
-            }
-            if (hackerNewsData.status === 'fulfilled') {
-                allData.push(...hackerNewsData.value);
-            }
-            if (devToData.status === 'fulfilled') {
-                allData.push(...devToData.value);
-            }
+            const requests = activeSources.map((source) => ({
+                source,
+                request: buildSourceRequest(source, userKeywords),
+            }));
+
+            const results = await Promise.allSettled(
+                requests.map((item) => item.request)
+            );
+
+            results.forEach((result, index) => {
+                if (result.status === 'fulfilled') {
+                    allData.push(...result.value);
+                } else {
+                    console.error(
+                        `数据源 ${requests[index].source.name} 读取失败:`,
+                        result.reason
+                    );
+                }
+            });
 
             // 根据用户关键字过滤，保证主题相关
             const normalizedKeywords = userKeywords
@@ -185,8 +191,8 @@ export function useInfoFeed() {
     };
 
     // 手动刷新
-    const refreshData = async (userKeywords = []) => {
-        await fetchData(userKeywords);
+    const refreshData = async (userKeywords = [], activeSources = []) => {
+        await fetchData(userKeywords, activeSources);
     };
 
     return {
@@ -205,4 +211,22 @@ export function useInfoFeed() {
         fetchData,
         refreshData,
     };
+}
+
+function buildSourceRequest(source, keywords) {
+    switch (source.type) {
+        case 'github':
+            return fetchGitHubTrending('', keywords);
+        case 'hackerNews':
+            return fetchHackerNews(keywords);
+        case 'devto':
+            return fetchDevTo(keywords);
+        case 'rss':
+            if (source.url) {
+                return fetchRSSFeed(source.url, source.name);
+            }
+            return Promise.resolve([]);
+        default:
+            return Promise.resolve([]);
+    }
 }

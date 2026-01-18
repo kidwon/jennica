@@ -13,6 +13,12 @@
     <main class="app-main">
       <div class="container">
         <KeywordManager />
+        <SourceManager
+          :sources="sources"
+          @add-source="handleAddSource"
+          @toggle-source="handleToggleSource"
+          @remove-source="handleRemoveSource"
+        />
         
         <div class="action-bar">
           <button 
@@ -70,21 +76,34 @@
     </main>
 
     <footer class="app-footer">
-      <p>个人助理 © 2026 · 使用 Vue.js 构建 · 数据来自 GitHub, Hacker News, Dev.to</p>
+      <p>个人助理 © 2026 · 使用 Vue.js 构建 · 数据来自自选信息源</p>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import KeywordManager from './components/KeywordManager.vue';
+import SourceManager from './components/SourceManager.vue';
 import SearchFilter from './components/SearchFilter.vue';
 import Timeline from './components/Timeline.vue';
 import { useKeywords } from './composables/useKeywords';
 import { useInfoFeed } from './composables/useInfoFeed';
+import { useSources } from './composables/useSources';
 
 // 关键字管理
 const { enabledKeywords } = useKeywords();
+
+// 信息源管理
+const {
+  sources,
+  enabledSources,
+  addSource,
+  removeSource,
+  toggleSource,
+  sourceNameExists,
+  sourceUrlExists,
+} = useSources();
 
 // 信息流管理
 const {
@@ -110,14 +129,42 @@ const handleKeywordClick = (keyword) => {
 // 刷新数据
 const handleRefresh = async () => {
   const keywordNames = enabledKeywords.value.map(k => k.name);
-  await refreshData(keywordNames);
+  await refreshData(keywordNames, enabledSources.value);
 };
 
 // 初始加载数据
 onMounted(async () => {
   const keywordNames = enabledKeywords.value.map(k => k.name);
-  await fetchData(keywordNames);
+  await fetchData(keywordNames, enabledSources.value);
 });
+
+// 信息源变化后自动触发刷新，保障内容同步
+watch(enabledSources, async () => {
+  const keywordNames = enabledKeywords.value.map(k => k.name);
+  await refreshData(keywordNames, enabledSources.value);
+}, { deep: true });
+
+const handleAddSource = ({ name, url }) => {
+  if (sourceNameExists(name)) {
+    alert('该信息源名称已存在');
+    return;
+  }
+
+  if (sourceUrlExists(url)) {
+    alert('该链接已经添加过');
+    return;
+  }
+
+  addSource(name, url);
+};
+
+const handleToggleSource = (id) => {
+  toggleSource(id);
+};
+
+const handleRemoveSource = (id) => {
+  removeSource(id);
+};
 </script>
 
 <style>
