@@ -1,0 +1,36 @@
+{
+  "theme": "pharma",
+  "size": {
+    "width": 1080,
+    "height": 1350
+  },
+  "background": {
+    "type": "gradient",
+    "colors": ["#0ea5e9", "#6366f1"],
+    "angle": 145
+  },
+  "header": {
+    "title": "{{ date }}",
+    "subtitle": "制药情报"
+  },
+  "metrics": [
+    {
+      "label": "监管审批",
+      "value": "{{ regulatory_count }}"
+    },
+    {
+      "label": "临床试验",
+      "value": "{{ clinical_count }}"
+    },
+    {
+      "label": "投融资",
+      "value": "{{ financing_count }}"
+    }
+  ],
+  "highlights": [
+    "{{ highlight_1 }}",
+    "{{ highlight_2 }}"
+  ],
+  "keywords": "{{ keywords }}",
+  "footer": "数据源: FiercePharma · Endpoints · FDA"
+}

@@ -21,4 +21,16 @@ npm run preview  # 预览生产版本
 2. 填写来源名称与 RSS/Atom 链接（例如 https://techcrunch.com/feed/）。
 3. 新来源立即与现有关键字联动，刷新后即可看到聚合内容；可随时禁用或删除。
 
-若需部署到 GitHub Pages，本仓库已内置自动化工作流，推送到 `main` 分支将自动构建并发布。EOF
+若需部署到 GitHub Pages，本仓库已内置自动化工作流，推送到 `main` 分支将自动构建并发布。
+
+## Pharma Daily Skill
+
+`skills/pharma-daily/` 基于 ai-daily-skill 工作流进行抽象，聚合 FiercePharma、Endpoints、PharmaTimes、FDA 与 ClinicalTrials.gov RSS，生成制药情报 JSON，供智能体撰写日报或渲染资产。
+
+```bash
+python skills/pharma-daily/scripts/fetch_pharma_news.py            # 抓取当天 (UTC+8)
+python skills/pharma-daily/scripts/fetch_pharma_news.py --date 2026-02-10
+python skills/pharma-daily/scripts/fetch_pharma_news.py --date-range
+```
+
+抓取结果保存在 `storage/pharma-news/{date}.json`，并可结合 `skills/pharma-daily/references/` 内的输出规范与模版生成 Markdown、HTML 页面或分享卡片。
