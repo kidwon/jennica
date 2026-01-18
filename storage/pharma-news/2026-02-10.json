@@ -1,0 +1,58 @@
+{
+  "date": "2026-02-10",
+  "generated_at": "2026-02-10T12:00:00+08:00",
+  "source_count": 5,
+  "item_count": 5,
+  "items": [
+    {
+      "source_id": "fiercepharma",
+      "source": "FiercePharma",
+      "title": "Pfizer's RSV shot wins EMA nod",
+      "summary": "The European Medicines Agency recommended approving Pfizer's RSV vaccine for adults 60+, paving the way for a commercial launch across the bloc.",
+      "published_at": "2026-02-09T23:30:00+00:00",
+      "published_local": "2026-02-10T07:30:00+08:00",
+      "date": "2026-02-10",
+      "url": "https://www.fiercepharma.com/pharma/pfizer-rsv-ema"
+    },
+    {
+      "source_id": "endpoints",
+      "source": "Endpoints News",
+      "title": "Moderna posts Phase III melanoma win with Keytruda combo",
+      "summary": "Moderna and Merck reported a 35% reduction in recurrence for their mRNA vaccine + Keytruda regimen, and plan FDA submission later this year.",
+      "published_at": "2026-02-10T01:00:00+00:00",
+      "published_local": "2026-02-10T09:00:00+08:00",
+      "date": "2026-02-10",
+      "url": "https://endpts.com/moderna-keytruda-phase3"
+    },
+    {
+      "source_id": "pharmatimes",
+      "source": "PharmaTimes",
+      "title": "AstraZeneca, EQRx terminate $1B licensing deal",
+      "summary": "AstraZeneca and EQRx mutually ended their asset licensing pact as pricing reforms reshape the US market; both parties will explore new collaborations.",
+      "published_at": "2026-02-09T18:00:00+00:00",
+      "published_local": "2026-02-10T02:00:00+08:00",
+      "date": "2026-02-10",
+      "url": "https://www.pharmatimes.com/news/astrazeneca-eqrx"
+    },
+    {
+      "source_id": "fda-cder",
+      "source": "FDA CDER",
+      "title": "FDA approves Eli Lilly's oral obesity drug Orizea",
+      "summary": "CDER granted priority approval to Orizea for chronic weight management, making Lilly the first oral entrant against GLP-1 incumbents.",
+      "published_at": "2026-02-10T03:15:00+00:00",
+      "published_local": "2026-02-10T11:15:00+08:00",
+      "date": "2026-02-10",
+      "url": "https://www.fda.gov/news-events/press-announcements/orizea-approval"
+    },
+    {
+      "source_id": "clinicaltrials",
+      "source": "ClinicalTrials.gov",
+      "title": "Phase II study shows Takeda's oral Crohn's therapy meets endpoints",
+      "summary": "Takeda disclosed top-line Phase II data showing its oral TYK2 inhibitor achieved clinical remission at week 12, setting up a Phase III start in H2.",
+      "published_at": "2026-02-09T15:00:00+00:00",
+      "published_local": "2026-02-10T00:00:00+08:00",
+      "date": "2026-02-10",
+      "url": "https://clinicaltrials.gov/study/takeda-tyk2"
+    }
+  ]
+}

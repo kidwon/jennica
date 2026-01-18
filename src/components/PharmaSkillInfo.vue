@@ -1,132 +1,214 @@
 <template>
-  <section class="pharma-skill">
+  <section class="pharma-view">
     <header class="skill-hero glass">
       <div>
         <p class="eyebrow">Pharma Daily Intelligence</p>
-        <h2>制药资讯 Skill</h2>
+        <h2>制药资讯 · Skill 驱动日报</h2>
         <p class="lead">
-          借鉴 <code>ai-daily</code> 流程的制药情报模块，聚合 FiercePharma、Endpoints、FDA 等来源，输出研究级 Markdown/HTML/卡片。
+          借鉴 <code>ai-daily</code> 的流程：抓取 5 大制药 RSS → 存储 JSON → Claude 总结 → 输出 Markdown/HTML/图卡。
+          运行 `fetch_pharma_news.py` + `generate_pharma_report.py` 后，即可在此查看每日摘要。
         </p>
       </div>
       <div class="hero-actions">
-        <span class="chip">RSS 聚合</span>
-        <span class="chip">Claude 总结</span>
-        <span class="chip">HTML/图卡</span>
+        <span class="chip">FiercePharma</span>
+        <span class="chip">Endpoints</span>
+        <span class="chip">FDA CDER</span>
+        <span class="chip">ClinicalTrials.gov</span>
       </div>
     </header>
 
-    <div class="skill-grid">
+    <div class="control-card glass">
+      <div class="control-group">
+        <label for="pharma-date">选择日期</label>
+        <input
+          id="pharma-date"
+          type="date"
+          v-model="selectedDate"
+          :max="today"
+        />
+      </div>
+      <button class="btn btn-primary" @click="loadReport" :disabled="loading">
+        {{ loading ? '加载中...' : '获取报告' }}
+      </button>
+      <p class="hint">
+        先运行
+        <code>python skills/pharma-daily/scripts/fetch_pharma_news.py --date {{ selectedDate }}</code>
+        和
+        <code>python skills/pharma-daily/scripts/generate_pharma_report.py --date {{ selectedDate }} --public</code>
+        生成 <code>public/pharma-news/{{ selectedDate }}.report.json</code>。
+      </p>
+    </div>
+
+    <div v-if="error" class="banner error">
+      {{ error }}
+    </div>
+    <div v-else-if="fallbackNotice" class="banner info">
+      {{ fallbackNotice }}
+    </div>
+
+    <div v-if="loading" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>正在载入制药日报...</p>
+    </div>
+
+    <section v-else-if="report" class="report">
+      <div class="report-meta">
+        <div>
+          <span>数据日期</span>
+          <strong>{{ report.date }}</strong>
+        </div>
+        <div>
+          <span>生成时间</span>
+          <strong>{{ formatDate(report.generated_at) }}</strong>
+        </div>
+        <div>
+          <span>来源数</span>
+          <strong>{{ report.source_count || report.sources?.length || 0 }}</strong>
+        </div>
+        <div>
+          <span>资讯条数</span>
+          <strong>{{ report.item_count || totalItems }}</strong>
+        </div>
+      </div>
+
       <article class="panel">
-        <h3>Quick Start</h3>
-        <ul class="command-list">
-          <li v-for="command in quickCommands" :key="command">
-            <code>{{ command }}</code>
-          </li>
+        <h3>今日速览</h3>
+        <ul class="takeaways">
+          <li v-for="item in report.takeaways" :key="item">{{ item }}</li>
         </ul>
       </article>
 
       <article class="panel">
-        <h3>Source Coverage</h3>
-        <ul class="source-list">
-          <li v-for="source in sources" :key="source.id">
-            <strong>{{ source.name }}</strong>
-            <span>{{ source.focus }}</span>
-          </li>
-        </ul>
+        <h3>关键词雷达</h3>
+        <div class="keyword-grid">
+          <span
+            v-for="keyword in report.keywords"
+            :key="keyword.name"
+            class="keyword-chip"
+          >
+            {{ keyword.name }} · 热度 {{ keyword.heat }}
+          </span>
+          <p v-if="!report.keywords?.length" class="muted">尚无关键词，运行 AI 总结后将自动填充。</p>
+        </div>
       </article>
 
-      <article class="panel full">
-        <h3>Workflow</h3>
-        <ol class="workflow">
-          <li v-for="(step, index) in workflowSteps" :key="step">
-            <span class="step-index">{{ index + 1 }}</span>
-            <div>
-              <h4>{{ step.title }}</h4>
-              <p>{{ step.description }}</p>
-            </div>
-          </li>
-        </ol>
-      </article>
-
-      <article class="panel">
-        <h3>Output Format</h3>
-        <ul class="output-list">
-          <li v-for="section in outputSections" :key="section">
-            {{ section }}
-          </li>
-        </ul>
-        <p class="meta">详见 <code>skills/pharma-daily/references/output-format.md</code></p>
-      </article>
-
-      <article class="panel">
-        <h3>Assets</h3>
-        <ul class="asset-list">
-          <li v-for="asset in assets" :key="asset.name">
-            <strong>{{ asset.name }}</strong>
-            <span>{{ asset.note }}</span>
-          </li>
-        </ul>
-      </article>
+      <section class="category-grid">
+        <article
+          v-for="category in report.categories"
+          :key="category.id"
+          class="panel category"
+        >
+          <div class="category-header">
+            <h3>{{ category.name }}</h3>
+            <span class="badge">{{ category.items.length }} 条</span>
+          </div>
+          <ul>
+            <li v-for="item in category.items" :key="item.title" class="category-item">
+              <div class="category-meta">
+                <span class="source-tag">{{ item.source }}</span>
+                <span class="time-tag">{{ formatTime(item.published_local) }}</span>
+              </div>
+              <a :href="item.url" target="_blank" rel="noopener" class="category-title">
+                {{ item.title }}
+              </a>
+              <p class="category-insight">{{ item.insight }}</p>
+            </li>
+          </ul>
+        </article>
+      </section>
 
       <article class="panel">
-        <h3>QA Checklist</h3>
-        <ul class="qa-list">
-          <li v-for="item in qaChecklist" :key="item">{{ item }}</li>
+        <h3>数据附录</h3>
+        <ul class="appendix">
+          <li>来源：{{ report.sources?.join(' · ') || '未记录' }}</li>
+          <li>生成脚本：fetch_pharma_news.py → generate_pharma_report.py</li>
+          <li v-if="fallbackNotice">
+            当前展示样例报告，运行脚本即可替换为实时数据。
+          </li>
         </ul>
       </article>
+    </section>
+
+    <div v-else class="empty-state glass">
+      <p>尚未生成报告。请运行脚本并点击“获取报告”。</p>
     </div>
   </section>
 </template>
 
 <script setup>
-const quickCommands = [
-  '昨天制药资讯',
-  '2026-02-10的药企新闻',
-  '昨天的监管审批动态',
-  '昨天制药资讯，生成网页',
-  '今天的制药资讯，生成图卡',
-];
+import { ref, computed, onMounted } from 'vue';
 
-const sources = [
-  { id: 'fiercepharma', name: 'FiercePharma', focus: '上市药企 / 商业化策略' },
-  { id: 'endpoints', name: 'Endpoints News', focus: '临床试验 / 融资' },
-  { id: 'pharmatimes', name: 'PharmaTimes', focus: '政策 / 市场准入' },
-  { id: 'fda-cder', name: 'FDA CDER', focus: '监管决策 / 批准' },
-  { id: 'clinicaltrials', name: 'ClinicalTrials.gov', focus: '结果公示 / 研究完成' },
-];
+const today = new Date().toISOString().slice(0, 10);
+const defaultDate = '2026-02-10';
+const selectedDate = ref(defaultDate);
+const report = ref(null);
+const loading = ref(false);
+const error = ref('');
+const fallbackNotice = ref('');
 
-const workflowSteps = [
-  { title: '解析日期与筛选', description: '支持 昨天/前天/今天 或 YYYY-MM-DD，并识别分类、来源过滤。' },
-  { title: '抓取 RSS 并缓存', description: '运行 fetch_pharma_news.py 抓取上游 RSS，按 UTC+8 日期写入 storage/pharma-news。' },
-  { title: '校验数据窗口', description: '若目标日无结果，返回可用日期及建议指令。' },
-  { title: 'Claude 富化', description: '生成要点、分类、关键词，结构化 JSON。' },
-  { title: '输出 Markdown', description: '按照 output-format.md 填充 今日速览/分类解读/关键词雷达/数据附录。' },
-  { title: '可选资产', description: '可渲染 Apple 风格 HTML 或分享卡片 JSON。' },
-];
+const totalItems = computed(() => {
+  return report.value?.categories?.reduce((sum, category) => sum + category.items.length, 0) || 0;
+});
 
-const outputSections = [
-  '# {date} 制药情报日报',
-  '## 今日速览 · 3-5 个要点',
-  '## 分类解读 · Launches/Trials/Regulatory 等',
-  '## 关键词雷达 · 关键词/公司/热度',
-  '## 数据附录 · 来源与生成时间',
-];
+const fetchReport = async (date) => {
+  const cacheBust = Date.now();
+  const tryUrl = async (path) => {
+    const response = await fetch(`${path}?v=${cacheBust}`);
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    return await response.json();
+  };
 
-const assets = [
-  { name: 'pharma-briefing.html', note: 'Apple-style HTML，含类别色条与关键词 Chip' },
-  { name: 'pharma-card.json', note: '1080x1350 分享图，展示指标与关键词' },
-];
+  error.value = '';
+  fallbackNotice.value = '';
+  loading.value = true;
+  try {
+    report.value = await tryUrl(`/pharma-news/${date}.report.json`);
+  } catch (err) {
+    console.error(err);
+    try {
+      report.value = await tryUrl('/pharma-news/sample.report.json');
+      fallbackNotice.value = `未找到 ${date} 的报告，已展示样例数据。`;
+    } catch (sampleErr) {
+      console.error(sampleErr);
+      report.value = null;
+      error.value = '没有可用的制药日报，请先运行脚本生成 JSON。';
+    }
+  } finally {
+    loading.value = false;
+  }
+};
 
-const qaChecklist = [
-  '日期格式固定 YYYY-MM-DD (UTC+8)',
-  '≥3 个来源引用或说明缺失原因',
-  '空分类不在 Markdown 中渲染',
-  '抓取频率 ≤ 30 分钟/次，避免 RSS 过载',
-];
+const loadReport = () => {
+  fetchReport(selectedDate.value || defaultDate);
+};
+
+onMounted(() => {
+  fetchReport(defaultDate);
+});
+
+const formatDate = (value) => {
+  if (!value) return '未知';
+  try {
+    return new Date(value).toLocaleString('zh-CN', { hour12: false });
+  } catch (err) {
+    return value;
+  }
+};
+
+const formatTime = (value) => {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  } catch (err) {
+    return value;
+  }
+};
 </script>
 
 <style scoped>
-.pharma-skill {
+.pharma-view {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
@@ -136,7 +218,7 @@ const qaChecklist = [
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
+  gap: var(--spacing-lg);
   padding: var(--spacing-xl);
   border-radius: var(--radius-lg);
 }
@@ -155,12 +237,13 @@ const qaChecklist = [
 }
 
 .skill-hero .lead {
-  max-width: 520px;
+  max-width: 560px;
   color: var(--text-secondary);
 }
 
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   align-items: center;
 }
@@ -173,10 +256,70 @@ const qaChecklist = [
   font-size: 0.75rem;
 }
 
-.skill-grid {
+.control-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.control-group input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  color: var(--text-primary);
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.banner {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+}
+
+.banner.error {
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.4);
+}
+
+.banner.info {
+  background: rgba(102, 126, 234, 0.15);
+  border: 1px solid rgba(102, 126, 234, 0.4);
+}
+
+.report-meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.report-meta div {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
+.report-meta span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.report-meta strong {
+  font-size: 1.2rem;
 }
 
 .panel {
@@ -187,87 +330,91 @@ const qaChecklist = [
   backdrop-filter: blur(10px);
 }
 
-.panel.full {
-  grid-column: 1 / -1;
-}
-
-.panel h3 {
-  margin-top: 0;
-  margin-bottom: var(--spacing-sm);
-}
-
-.command-list,
-.source-list,
-.workflow,
-.output-list,
-.asset-list,
-.qa-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.command-list code {
-  background: var(--bg-secondary);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-}
-
-.source-list li {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
+.takeaways {
+  list-style: disc;
+  padding-left: 1.5rem;
   color: var(--text-secondary);
 }
 
-.source-list strong {
-  color: var(--text-primary);
-}
-
-.workflow li {
+.keyword-grid {
   display: flex;
-  gap: var(--spacing-md);
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
 }
 
-.step-index {
-  width: 28px;
-  height: 28px;
+.keyword-chip {
+  padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--radius-full);
-  background: var(--primary-gradient);
-  color: #fff;
+  background: rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(102, 126, 234, 0.4);
   font-size: 0.85rem;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.category-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  margin-bottom: var(--spacing-sm);
 }
 
-.workflow h4 {
-  margin: 0 0 var(--spacing-xxs);
-  font-size: 1rem;
+.badge {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.meta {
-  margin-top: var(--spacing-md);
+.category-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--spacing-sm) 0;
+}
+
+.category-meta {
+  display: flex;
+  gap: var(--spacing-sm);
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.asset-list strong {
-  display: block;
+.category-title {
   color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.category-title:hover {
+  text-decoration: underline;
+}
+
+.category-insight {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.appendix {
+  list-style: disc;
+  padding-left: 1.2rem;
+  color: var(--text-secondary);
+}
+
+.empty-state {
+  padding: var(--spacing-xl);
+  text-align: center;
+  border-radius: var(--radius-lg);
 }
 
 @media (max-width: 768px) {
-  .skill-hero {
-    flex-direction: column;
+  .control-card {
     align-items: flex-start;
-    gap: var(--spacing-md);
   }
 }
 </style>

@@ -32,6 +32,9 @@ npm run preview  # 预览生产版本
 python skills/pharma-daily/scripts/fetch_pharma_news.py            # 抓取当天 (UTC+8)
 python skills/pharma-daily/scripts/fetch_pharma_news.py --date 2026-02-10
 python skills/pharma-daily/scripts/fetch_pharma_news.py --date-range
+python skills/pharma-daily/scripts/generate_pharma_report.py --date 2026-02-10 --public
 ```
 
-抓取结果保存在 `storage/pharma-news/{date}.json`，并可结合 `skills/pharma-daily/references/` 内的输出规范与模版生成 Markdown、HTML 页面或分享卡片。
+抓取结果保存在 `storage/pharma-news/{date}.json`，随后运行 `generate_pharma_report.py` 会生成 `storage/pharma-news/{date}.report.json` 并同步到 `public/pharma-news/{date}.report.json`。
+
+主页的“制药资讯”标签会自动读取该报告，展示速览、分类解读、关键词雷达与附件，若文件缺失则回退到样例数据。
