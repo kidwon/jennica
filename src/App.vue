@@ -12,66 +12,82 @@
 
     <main class="app-main">
       <div class="container">
-        <KeywordManager />
-        <SourceManager
-          :sources="sources"
-          @add-source="handleAddSource"
-          @toggle-source="handleToggleSource"
-          @remove-source="handleRemoveSource"
-        />
-        
-        <div class="action-bar">
-          <button 
-            class="btn btn-primary refresh-btn" 
-            @click="handleRefresh"
-            :disabled="isLoading"
+        <div class="view-tabs">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            class="tab-btn"
+            :class="{ active: activeTab === tab.id }"
+            @click="activeTab = tab.id"
           >
-            <span v-if="!isLoading">🔄 刷新数据</span>
-            <span v-else>⏳ 加载中...</span>
+            {{ tab.label }}
           </button>
-          <p class="last-update" v-if="!isLoading && filteredInfo.length > 0">
-            最后更新: {{ new Date().toLocaleTimeString('zh-CN') }}
-          </p>
         </div>
 
-        <SearchFilter
-          v-model:search-query="searchQuery"
-          v-model:selected-keywords="selectedKeywords"
-          v-model:selected-source="selectedSource"
-          :enabled-keywords="enabledKeywords"
-          :available-sources="availableSources"
-          @clear-filters="clearFilters"
-          @keyword-toggle="handleKeywordClick"
-        />
+        <template v-if="activeTab === 'insights'">
+          <KeywordManager />
+          <SourceManager
+            :sources="sources"
+            @add-source="handleAddSource"
+            @toggle-source="handleToggleSource"
+            @remove-source="handleRemoveSource"
+          />
+          
+          <div class="action-bar">
+            <button 
+              class="btn btn-primary refresh-btn" 
+              @click="handleRefresh"
+              :disabled="isLoading"
+            >
+              <span v-if="!isLoading">🔄 刷新数据</span>
+              <span v-else>⏳ 加载中...</span>
+            </button>
+            <p class="last-update" v-if="!isLoading && filteredInfo.length > 0">
+              最后更新: {{ new Date().toLocaleTimeString('zh-CN') }}
+            </p>
+          </div>
 
-        <!-- 错误提示 -->
-        <div v-if="error" class="error-banner">
-          <span>⚠️ {{ error }}</span>
-          <button class="btn btn-secondary" @click="handleRefresh">重试</button>
-        </div>
+          <SearchFilter
+            v-model:search-query="searchQuery"
+            v-model:selected-keywords="selectedKeywords"
+            v-model:selected-source="selectedSource"
+            :enabled-keywords="enabledKeywords"
+            :available-sources="availableSources"
+            @clear-filters="clearFilters"
+            @keyword-toggle="handleKeywordClick"
+          />
 
-        <!-- 加载状态 -->
-        <div v-if="isLoading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>正在获取最新数据...</p>
-        </div>
+          <!-- 错误提示 -->
+          <div v-if="error" class="error-banner">
+            <span>⚠️ {{ error }}</span>
+            <button class="btn btn-secondary" @click="handleRefresh">重试</button>
+          </div>
 
-        <!-- 结果摘要 -->
-        <div v-else class="results-summary">
-          <p v-if="filteredInfo.length > 0">
-            找到 <strong>{{ filteredInfo.length }}</strong> 条相关信息
-          </p>
-          <p v-else class="no-results">
-            没有找到匹配的信息
-          </p>
-        </div>
+          <!-- 加载状态 -->
+          <div v-if="isLoading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>正在获取最新数据...</p>
+          </div>
 
-        <Timeline
-          v-if="!isLoading"
-          :grouped-by-date="groupedByDate"
-          :selected-keywords="selectedKeywords"
-          @keyword-click="handleKeywordClick"
-        />
+          <!-- 结果摘要 -->
+          <div v-else class="results-summary">
+            <p v-if="filteredInfo.length > 0">
+              找到 <strong>{{ filteredInfo.length }}</strong> 条相关信息
+            </p>
+            <p v-else class="no-results">
+              没有找到匹配的信息
+            </p>
+          </div>
+
+          <Timeline
+            v-if="!isLoading"
+            :grouped-by-date="groupedByDate"
+            :selected-keywords="selectedKeywords"
+            @keyword-click="handleKeywordClick"
+          />
+        </template>
+
+        <PharmaSkillInfo v-else />
       </div>
     </main>
 
@@ -82,14 +98,22 @@
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue';
+import { onMounted, watch, ref } from 'vue';
 import KeywordManager from './components/KeywordManager.vue';
 import SourceManager from './components/SourceManager.vue';
 import SearchFilter from './components/SearchFilter.vue';
 import Timeline from './components/Timeline.vue';
+import PharmaSkillInfo from './components/PharmaSkillInfo.vue';
 import { useKeywords } from './composables/useKeywords';
 import { useInfoFeed } from './composables/useInfoFeed';
 import { useSources } from './composables/useSources';
+
+const tabs = [
+  { id: 'insights', label: '技术资讯' },
+  { id: 'pharma', label: '制药资讯' },
+];
+
+const activeTab = ref('insights');
 
 // 关键字管理
 const { enabledKeywords } = useKeywords();
@@ -216,6 +240,33 @@ const handleRemoveSource = (id) => {
 .container {
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.view-tabs {
+  display: inline-flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  margin-bottom: var(--spacing-xl);
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: var(--spacing-xs) var(--spacing-lg);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-base);
+}
+
+.tab-btn.active {
+  background: var(--primary-gradient);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.35);
 }
 
 .action-bar {
